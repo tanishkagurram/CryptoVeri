@@ -1,5 +1,7 @@
 # CryptoVeri — Live Evidence Sandbox for AI Financial Decisions (built on CooL)
 
+[![CI](https://github.com/tanishkagurram/CryptoVeri/actions/workflows/ci.yml/badge.svg)](https://github.com/tanishkagurram/CryptoVeri/actions/workflows/ci.yml)
+
 A hands-on demo that seals every AI-driven credit decision as cryptographically
 verifiable evidence, built on the real, published **[`cool-nwc`](https://www.npmjs.com/package/cool-nwc)**
 SDK ("CooL", from `Northwind-Cipher/cool-sdk`).
@@ -63,6 +65,25 @@ Nothing at the cryptography layer is mocked. Without real Phala dstack/TEE
 hardware configured, the SDK runs its own built-in simulator — real hybrid
 signatures over a real transparency log — and every simulated check is
 honestly labelled `simulated`, never faked as `pass`.
+
+## Why this, and not just another demo
+
+Every credit-decision demo in this space *says* it uses the real SDK. Few let you
+check that claim yourself. This one does, in three ways:
+
+1. **An automated test suite runs the actual `cool.record()` / `cool.verify()`
+   calls** — not mocks — and asserts on the SDK's real, structured verdict shape
+   (`{status, detail}` per check domain), including that the two
+   hardware-dependent checks come back honestly `"simulated"`, never `"pass"`.
+   See [`tests/api.test.mjs`](tests/api.test.mjs) and run it yourself with
+   `npm test`. CI runs it on every push.
+2. **Paste-and-verify needs nothing from this server** — copy any sealed
+   receipt's JSON, paste it into the right-hand panel, and it verifies against
+   nothing but its own bytes. You don't have to trust the demo; you can watch
+   the verifier work.
+3. **Every claim in this README is falsifiable in under a minute**: clone it,
+   `npm install`, `npm test`, `npm start`, seal a decision, tamper a field,
+   watch the right checks fail.
 
 ## How the CooL SDK is used
 
@@ -135,6 +156,31 @@ Then open **http://localhost:3000**.
 Nothing is persisted between restarts — receipts live in memory for the
 session, which is enough for a full seal → inspect → tamper → verify loop.
 
+### Run the tests
+
+```sh
+npm test
+```
+
+Uses Node's built-in test runner (`node --test`) — no extra dependency to
+install or audit. The suite spins up the actual Express app on an ephemeral
+port and drives it through `fetch()`, calling the real `cool.record()` /
+`cool.verify()` (simulator mode), including:
+
+- sealing a decision and asserting the receipt is a genuine `cool.receipt.v2`
+- a clean receipt verifying `pass` on every domain the SDK actually attempts,
+  and honestly `simulated` (never `pass`) on the two hardware-dependent ones
+- tampering `metadata_hash` breaking `binding` + `signature` but not
+  `inclusion`
+- tampering the transparency log's `sth.root_hash` breaking only
+  `inclusion`, leaving the record's own `signature` valid — the concrete
+  evidence behind the "seven independent domains" claim above, not just an
+  assertion of it
+- malformed input returning a clean `400` instead of a crash
+- unknown routes and history-clearing behaving as documented
+
+CI (`.github/workflows/ci.yml`) runs this same suite on every push.
+
 ### Deploying to Vercel
 
 The app is a single Express server (`server.mjs`), exported for Vercel's
@@ -202,6 +248,11 @@ public/
                   light-mode toggle)
   app.js          Live preview, animated pipeline, click-to-tamper tree,
                   session history, compare view, share links
+tests/
+  api.test.mjs    Automated tests against the real cool-nwc SDK (npm test)
+.github/
+  workflows/
+    ci.yml        Runs the test suite on every push/PR
 ```
 
 ## Important technical decisions
@@ -231,6 +282,10 @@ public/
   `Referrer-Policy`, and `X-Frame-Options` are set by hand rather than
   pulling in a middleware package, to keep the dependency surface to just
   `express` and `cool-nwc`.
+- **Automated, no-dependency test coverage.** `tests/api.test.mjs` uses
+  Node's built-in test runner against the real SDK calls, and CI runs it on
+  every push — so "the seven independent domains" and "honest simulated
+  labelling" claims above are checkable, not just asserted.
 
 ## Limitations & Future Scope
 
