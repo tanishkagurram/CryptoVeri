@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CryptoVeri — live evidence sandbox</title>
+<meta name="description" content="Seal an AI decision as a real, tamper-evident cool.receipt.v2 with the cool-nwc SDK — then tamper a field and watch which of the seven verification checks catch it." />
+<meta name="theme-color" content="#0a1114" />
+<meta property="og:title" content="CooL — live evidence sandbox" />
+<meta property="og:description" content="Hands-on sandbox for cryptographic execution receipts, built on the real cool-nwc SDK." />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%2317e0b8'/%3E%3Cstop offset='1' stop-color='%236c7bff'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath fill='url(%23g)' d='M32 3 58 14v16c0 17-11 28-26 31C17 58 6 47 6 30V14z'/%3E%3Cpath fill='none' stroke='%23070b0d' stroke-width='4' stroke-linecap='round' stroke-linejoin='round' d='M21 32l8 8 15-17'/%3E%3C/svg%3E" />
+<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+
+  <div class="bg-glow" aria-hidden="true"><div class="bg-grid"></div></div>
+  <canvas id="confetti-canvas" aria-hidden="true"></canvas>
+
+  <header class="topbar">
+    <span class="topbar__mark">CryptoVeri</span>
+    <span class="topbar__tag">live evidence sandbox — built on the real <code>cool-nwc</code> SDK</span>
+    <span id="health-pill" class="health-pill" data-state="unknown" title="SDK attestation status">
+      <span class="health-pill__dot"></span><span id="health-text">checking…</span>
+    </span>
+    <div class="topbar__controls">
+      <button id="sound-toggle" class="icon-btn" type="button" aria-pressed="false" title="Toggle sound effects">🔈</button>
+      <button id="theme-toggle" class="icon-btn" type="button" aria-pressed="false" title="Toggle light / dark theme">🌙</button>
+      <a href="https://github.com/Northwind-Cipher/cool-sdk" class="topbar__link" target="_blank" rel="noopener">source →</a>
+    </div>
+  </header>
+
+  <main class="workspace">
+
+    <!-- ============ 1 · APPLY ============ -->
+    <section class="panel panel--form">
+      <h2 class="panel__number">1 · Apply</h2>
+      <p class="panel__hint">Drag the sliders, then seal the AI's decision as tamper-evident evidence.</p>
+
+      <form id="apply-form">
+        <label class="field">
+          <span>Applicant name</span>
+          <input type="text" name="name" id="in-name" placeholder="A. Sharma" value="A. Sharma" required />
+        </label>
+
+        <label class="field">
+          <span>Annual income <b id="income-out">₹9,00,000</b></span>
+          <input type="range" id="in-income" min="100000" max="5000000" step="10000" value="900000" />
+        </label>
+
+        <label class="field">
+          <span>Loan amount <b id="loan-out">₹15,00,000</b></span>
+          <input type="range" id="in-loan" min="50000" max="10000000" step="10000" value="1500000" />
+        </label>
+
+        <label class="field">
+          <span>Purpose</span>
+          <select name="purpose" id="in-purpose">
+            <option value="home">Home</option>
+            <option value="education">Education</option>
+            <option value="business">Business</option>
+            <option value="personal">Personal</option>
+          </select>
+        </label>
+
+        <div class="live-estimate" id="live-estimate">
+          <div class="gauge" id="gauge">
+            <svg viewBox="0 0 64 64" width="64" height="64">
+              <circle class="gauge-track" cx="32" cy="32" r="27" />
+              <circle class="gauge-value" id="gauge-arc" cx="32" cy="32" r="27" />
+            </svg>
+            <div class="gauge-num" id="gauge-num">—</div>
+          </div>
+          <div>
+            <span class="live-estimate__label">Live estimate</span>
+            <span id="live-decision" class="live-estimate__decision">—</span>
+          </div>
+        </div>
+
+        <div class="sparkline">
+          <span class="sparkline__label">Score history (this session)</span>
+          <canvas id="sparkline-canvas" width="280" height="40"></canvas>
+        </div>
+
+        <div class="onboarding-anchor">
+          <button type="submit" class="btn btn--primary" id="apply-btn">Run AI decision</button>
+          <div id="onboarding-tip" class="onboarding-tip hidden">
+            👋 Start here — this seals your first real receipt.
+            <button type="button" id="onboarding-dismiss" aria-label="Dismiss">✕</button>
+          </div>
+        </div>
+        <p class="form-note">Runs a small local scoring model, then seals the decision as CooL evidence.</p>
+      </form>
+
+      <div class="history">
+        <div class="history__head">
+          <h3>This session <span id="history-count" class="history__count"></span></h3>
+          <button id="history-clear" class="history__clear" type="button">clear</button>
+        </div>
+        <ul id="history-list" class="history__list">
+          <li class="history__empty">Sealed receipts will show up here — click one to reload it.</li>
+        </ul>
+        <p class="history__hint">Tip: hold <kbd>Alt</kbd> and click two receipts to compare them.</p>
+      </div>
+    </section>
+
+    <!-- ============ 2 · SEAL -> LOG -> VERIFY ============ -->
+    <section class="panel panel--receipt">
+      <h2 class="panel__number">2 · Seal → Log → Verify</h2>
+
+      <div class="explainer" id="explainer">
+        <div class="explainer__step" data-step="seal">
+          <div class="explainer__rail"><span class="explainer__dot"></span><span class="explainer__line"></span></div>
+          <div>
+            <h3>Seal <span class="step-indicator"></span></h3>
+            <p><code>cool.record()</code> hashes the applicant data and the model's output, then discards the plaintext. It's signed twice — ML-DSA-65 (post-quantum) and Ed25519 (classical).</p>
+          </div>
+        </div>
+        <div class="explainer__step" data-step="log">
+          <div class="explainer__rail"><span class="explainer__dot"></span><span class="explainer__line"></span></div>
+          <div>
+            <h3>Log <span class="step-indicator"></span></h3>
+            <p>The signed record is appended to an RFC 6962 transparency log. Editing any past record would break the root hash.</p>
+          </div>
+        </div>
+        <div class="explainer__step" data-step="verify">
+          <div class="explainer__rail"><span class="explainer__dot"></span></div>
+          <div>
+            <h3>Verify <span class="step-indicator"></span></h3>
+            <p>An independent check runs offline — no login, no API key — across seven domains, and returns a structured verdict.</p>
+          </div>
+        </div>
+      </div>
+
+      <hr class="divider" />
+
+      <div id="empty-state" class="empty-state">
+        <p>Run an AI decision on the left to get a receipt you can inspect and verify.</p>
+      </div>
+
+      <div id="receipt-view" class="hidden">
+        <div class="summary-row summary-row--decision">
+          <span class="summary-row__label">Decision</span>
+          <span id="rv-decision" class="summary-row__value">—</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-row__label">Score</span>
+          <span id="rv-score" class="summary-row__value">—</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-row__label">Model</span>
+          <span id="rv-model" class="summary-row__value">—</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-row__label">Record ID</span>
+          <span id="rv-recordid" class="summary-row__value copyable" title="Click to copy">—</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-row__label">Binding</span>
+          <span id="rv-binding" class="summary-row__value copyable" title="Click to copy">—</span>
+        </div>
+
+        <div class="receipt-toolbar">
+          <button id="copy-json-btn" class="btn btn--ghost btn--small" type="button">Copy full JSON</button>
+          <button id="download-json-btn" class="btn btn--ghost btn--small" type="button">Download .json</button>
+          <button id="share-btn" class="btn btn--ghost btn--small" type="button">🔗 Share link</button>
+        </div>
+        <p class="form-note" id="share-note" style="display:none;">
+          Share link copied — it carries the full receipt in the URL itself (no server lookup), so it works even across
+          serverless instances.
+        </p>
+
+        <div class="advanced" id="advanced-panel">
+          <button type="button" class="advanced__toggle" id="advanced-toggle">
+            <span class="chevron">▶</span> Inspect &amp; tamper the full receipt (advanced)
+          </button>
+          <div class="advanced__body hidden" id="advanced-body">
+            <p class="panel__hint" style="margin-bottom:0.6rem;">
+              Click any highlighted value to flip one character in it — then re-verify on the right to see exactly which checks that field feeds.
+            </p>
+            <input type="text" id="tree-search" class="tree-search" placeholder="Filter fields… e.g. signature, sth, key_directory" />
+            <div id="tree-root" class="tree"></div>
+            <div class="receipt-actions">
+              <button id="reset-btn" class="btn btn--ghost">Reset tampering</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 3 · VERIFY ============ -->
+    <section class="panel panel--raw">
+      <h2 class="panel__number">3 · Verify</h2>
+      <p class="panel__hint">
+        Run a decision on the left, then check it here — or paste someone else's receipt below. Verification trusts nothing but these bytes: no login, no server lookup.
+      </p>
+
+      <div class="verify-buttons">
+        <button id="verify-btn" class="btn btn--primary">Verify this receipt</button>
+        <button id="tamper-btn" class="btn btn--ghost btn--danger">Tamper a field &amp; re-verify</button>
+      </div>
+
+      <div id="verdict" class="hidden">
+        <div id="result-banner" class="result-banner">
+          <span id="result-icon" class="result-banner__icon">—</span>
+          <div>
+            <div id="result-headline" class="result-banner__headline">—</div>
+            <div id="result-sub" class="result-banner__sub"></div>
+          </div>
+        </div>
+        <ul id="check-list" class="check-list"></ul>
+        <ul id="verdict-reasons" class="verdict-reasons"></ul>
+      </div>
+
+      <div class="advanced" id="raw-advanced">
+        <button type="button" class="advanced__toggle" id="raw-advanced-toggle">
+          <span class="chevron">▶</span> Paste your own receipt JSON instead
+        </button>
+        <div class="advanced__body hidden" id="raw-advanced-body">
+          <textarea id="raw-input" placeholder="Paste a cool.receipt.v2 JSON here, then click Verify above."></textarea>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="shortcuts-footer">
+    <span><kbd>Enter</kbd> in the form seals a decision</span>
+    <span><kbd>V</kbd> verify</span>
+    <span><kbd>T</kbd> tamper &amp; re-verify</span>
+    <span><kbd>R</kbd> reset tampering</span>
+    <span><kbd>Alt</kbd> + click two history items to compare</span>
+  </footer>
+
+  <div id="compare-backdrop" class="modal-backdrop hidden">
+    <div class="modal">
+      <div class="modal__head">
+        <h3>Compare receipts</h3>
+        <button id="compare-close" class="modal__close" type="button">✕</button>
+      </div>
+      <div id="compare-body" class="compare-grid"></div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

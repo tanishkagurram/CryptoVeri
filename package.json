@@ -1,0 +1,19 @@
+{
+  "name": "cool-fin-demo",
+  "version": "1.0.0",
+  "description": "CooL - cryptographic execution receipts for AI-driven financial decisions. Demo app built on the real cool-nwc SDK.",
+  "type": "module",
+  "private": true,
+  "main": "server.mjs",
+  "scripts": {
+    "start": "node server.mjs",
+    "dev": "node --watch server.mjs"
+  },
+  "dependencies": {
+    "cool-nwc": "^3.0.0",
+    "express": "^4.19.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
